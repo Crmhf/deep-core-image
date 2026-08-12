@@ -1,5 +1,5 @@
 {
-    "default_provider": "qwen-image",
+    "default_provider": "gpt-image",
     "providers": {
         "gpt-image": {
             "endpoints": [
@@ -34,7 +34,7 @@
             "endpoint_type": "minimax"
         }
     },
-    "fallback_order": ["qwen-image", "minimax-image", "gpt-image", "qwen-image-flash"],
+    "fallback_order": ["gpt-image", "qwen-image", "minimax-image", "qwen-image-flash"],
     "default_size": "1024x1024",
     "default_quality": "high",
     "default_response_format": "b64_json",

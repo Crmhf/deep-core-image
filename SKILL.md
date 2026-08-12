@@ -84,7 +84,7 @@ description: 使用多个 AI 提供商生成高质量图片，支持自动降级
 
 ```json
 {
-    "default_provider": "qwen-image",
+    "default_provider": "gpt-image",
     "providers": {
         "gpt-image": {
             "endpoints": [
@@ -119,7 +119,7 @@ description: 使用多个 AI 提供商生成高质量图片，支持自动降级
             "endpoint_type": "minimax"
         }
     },
-    "fallback_order": ["qwen-image", "minimax-image", "gpt-image", "qwen-image-flash"],
+    "fallback_order": ["gpt-image", "qwen-image", "minimax-image", "qwen-image-flash"],
     "default_size": "1024x1024",
     "default_quality": "high",
     "default_response_format": "b64_json",
@@ -250,9 +250,9 @@ python scripts/generate_image.py \
 
 系统自动按顺序尝试提供商：
 
-1. **qwen-image** → 如果失败 → **minimax-image**
-2. **minimax-image** → 如果失败 → **gpt-image**
-3. **gpt-image** → 如果失败 → **qwen-image-flash**
+1. **gpt-image** → 如果失败 → **qwen-image**
+2. **qwen-image** → 如果失败 → **minimax-image**
+3. **minimax-image** → 如果失败 → **qwen-image-flash**
 4. **qwen-image-flash** → 如果失败 → 错误
 
 每个提供商最多重试 3 次，采用指数退避策略。

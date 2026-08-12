@@ -109,7 +109,7 @@ python scripts/generate_image.py \
 此时会按 `config.json` 中的 `fallback_order` 自动尝试：
 
 ```
-qwen-image → minimax-image → gpt-image → qwen-image-flash
+gpt-image → qwen-image → minimax-image → qwen-image-flash
 ```
 
 ### 环境变量方式

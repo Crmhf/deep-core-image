@@ -55,7 +55,7 @@ cp config.sample.json config.json
 
 ```json
 {
-    "default_provider": "qwen-image",
+    "default_provider": "gpt-image",
     "providers": {
         "gpt-image": {
             "endpoints": [
@@ -90,7 +90,7 @@ cp config.sample.json config.json
             "endpoint_type": "minimax"
         }
     },
-    "fallback_order": ["qwen-image", "minimax-image", "gpt-image", "qwen-image-flash"]
+    "fallback_order": ["gpt-image", "qwen-image", "minimax-image", "qwen-image-flash"]
 }
 ```
 
@@ -169,7 +169,7 @@ python scripts/generate_image.py \
 ## 当前推荐用法
 
 ```bash
-# 默认 provider 已设为 qwen-image
+# 默认 provider 已设为 gpt-image，内部多 endpoint 自动负载均衡
 python scripts/generate_image.py \
   --prompt "你的 Prompt" \
   --ratio 16:9 \
