@@ -375,6 +375,80 @@ def generate_minimax(
     return images
 
 
+def _try_generate_with_config(
+    provider_config: Dict,
+    prompt: str,
+    size: str,
+    quality: str,
+    n: int,
+    response_format: str,
+    input_image: Optional[str],
+    no_proxy: bool,
+    timeout: int,
+    max_retries: int,
+    provider_label: str
+) -> Optional[List[Dict]]:
+    """
+    Try to generate images with a single provider/endpoint config.
+    Returns images on success, None on failure.
+    """
+    endpoint_type = provider_config.get("endpoint_type", "openai_compatible")
+
+    for attempt in range(max_retries):
+        try:
+            if endpoint_type == "openai_compatible":
+                images = generate_openai_compatible(
+                    provider_config=provider_config,
+                    prompt=prompt,
+                    size=size,
+                    quality=quality,
+                    n=n,
+                    response_format=response_format,
+                    input_image=input_image,
+                    no_proxy=no_proxy,
+                    timeout=timeout
+                )
+            elif endpoint_type == "minimax":
+                images = generate_minimax(
+                    provider_config=provider_config,
+                    prompt=prompt,
+                    size=size,
+                    quality=quality,
+                    n=n,
+                    response_format=response_format,
+                    input_image=input_image,
+                    no_proxy=no_proxy,
+                    timeout=timeout
+                )
+            else:
+                raise ValueError(f"Unknown endpoint type: {endpoint_type}")
+
+            print(f"✓ Successfully generated image(s) with {provider_label}")
+            return images
+
+        except requests.exceptions.Timeout:
+            print(f"✗ Attempt {attempt + 1}/{max_retries}: Request timed out")
+        except requests.exceptions.ConnectionError as e:
+            print(f"✗ Attempt {attempt + 1}/{max_retries}: Connection error")
+        except requests.exceptions.HTTPError as e:
+            print(f"✗ Attempt {attempt + 1}/{max_retries}: HTTP {e.response.status_code}")
+            try:
+                error_detail = e.response.json()
+                print(f"  Error: {json.dumps(error_detail, indent=2)}")
+            except:
+                pass
+        except Exception as e:
+            print(f"✗ Attempt {attempt + 1}/{max_retries}: {str(e)}")
+
+        if attempt < max_retries - 1:
+            wait_time = 2 ** attempt  # Exponential backoff
+            print(f"  Waiting {wait_time}s before retry...")
+            time.sleep(wait_time)
+
+    print(f"✗ {provider_label} failed after {max_retries} attempts")
+    return None
+
+
 def generate_image_with_fallback(
     config: Dict,
     prompt: str,
@@ -388,6 +462,7 @@ def generate_image_with_fallback(
 ) -> tuple:
     """
     Generate image with automatic provider fallback.
+    Supports multi-endpoint providers for load balancing.
 
     Args:
         config: Full configuration dict
@@ -422,69 +497,69 @@ def generate_image_with_fallback(
             continue
 
         provider_config = providers[provider_name]
-        endpoint_type = provider_config.get("endpoint_type", "openai_compatible")
 
         print(f"\n{'='*60}")
-        print(f"Trying provider: {provider_name} ({provider_config['model']})")
-        print(f"Endpoint type: {endpoint_type}")
+        print(f"Trying provider: {provider_name} ({provider_config.get('model', 'unknown')})")
+        print(f"Endpoint type: {provider_config.get('endpoint_type', 'openai_compatible')}")
         print(f"{'='*60}")
 
-        for attempt in range(max_retries):
-            try:
-                if endpoint_type == "openai_compatible":
-                    images = generate_openai_compatible(
-                        provider_config=provider_config,
-                        prompt=prompt,
-                        size=size,
-                        quality=quality,
-                        n=n,
-                        response_format=response_format,
-                        input_image=input_image,
-                        no_proxy=no_proxy,
-                        timeout=timeout
-                    )
-                elif endpoint_type == "minimax":
-                    images = generate_minimax(
-                        provider_config=provider_config,
-                        prompt=prompt,
-                        size=size,
-                        quality=quality,
-                        n=n,
-                        response_format=response_format,
-                        input_image=input_image,
-                        no_proxy=no_proxy,
-                        timeout=timeout
-                    )
-                else:
-                    raise ValueError(f"Unknown endpoint type: {endpoint_type}")
+        # Check for multi-endpoint configuration (load balancing)
+        endpoints = provider_config.get("endpoints")
+        if endpoints and isinstance(endpoints, list):
+            print(f"Found {len(endpoints)} endpoint(s) for load balancing")
 
-                print(f"✓ Successfully generated image(s) with {provider_name}")
+            for idx, endpoint in enumerate(endpoints):
+                # Build a complete endpoint config by merging provider defaults with endpoint specifics
+                endpoint_config = {
+                    **provider_config,
+                    **endpoint,
+                    "endpoint_type": provider_config.get("endpoint_type", "openai_compatible")
+                }
+                # Remove the endpoints array from the child config
+                endpoint_config.pop("endpoints", None)
+
+                endpoint_label = f"{provider_name} [endpoint {idx + 1}/{len(endpoints)}: {endpoint_config.get('base_url', 'unknown')}]"
+                print(f"\n  -> Trying {endpoint_label}")
+
+                images = _try_generate_with_config(
+                    provider_config=endpoint_config,
+                    prompt=prompt,
+                    size=size,
+                    quality=quality,
+                    n=n,
+                    response_format=response_format,
+                    input_image=input_image,
+                    no_proxy=no_proxy,
+                    timeout=timeout,
+                    max_retries=max_retries,
+                    provider_label=endpoint_label
+                )
+
+                if images:
+                    return provider_name, images
+
+            last_error = f"Provider {provider_name}: all endpoints failed"
+            print(f"✗ Provider {provider_name} failed: all {len(endpoints)} endpoints exhausted")
+        else:
+            # Single endpoint (backward compatibility)
+            images = _try_generate_with_config(
+                provider_config=provider_config,
+                prompt=prompt,
+                size=size,
+                quality=quality,
+                n=n,
+                response_format=response_format,
+                input_image=input_image,
+                no_proxy=no_proxy,
+                timeout=timeout,
+                max_retries=max_retries,
+                provider_label=provider_name
+            )
+
+            if images:
                 return provider_name, images
 
-            except requests.exceptions.Timeout:
-                last_error = f"Provider {provider_name}: Request timed out"
-                print(f"✗ Attempt {attempt + 1}/{max_retries}: Request timed out")
-            except requests.exceptions.ConnectionError as e:
-                last_error = f"Provider {provider_name}: Connection error - {e}"
-                print(f"✗ Attempt {attempt + 1}/{max_retries}: Connection error")
-            except requests.exceptions.HTTPError as e:
-                last_error = f"Provider {provider_name}: HTTP error - {e}"
-                try:
-                    error_detail = e.response.json()
-                    print(f"✗ Attempt {attempt + 1}/{max_retries}: HTTP {e.response.status_code}")
-                    print(f"  Error: {json.dumps(error_detail, indent=2)}")
-                except:
-                    print(f"✗ Attempt {attempt + 1}/{max_retries}: HTTP {e.response.status_code}")
-            except Exception as e:
-                last_error = f"Provider {provider_name}: {str(e)}"
-                print(f"✗ Attempt {attempt + 1}/{max_retries}: {str(e)}")
-
-            if attempt < max_retries - 1:
-                wait_time = 2 ** attempt  # Exponential backoff
-                print(f"  Waiting {wait_time}s before retry...")
-                time.sleep(wait_time)
-
-        print(f"✗ Provider {provider_name} failed after {max_retries} attempts")
+            last_error = f"Provider {provider_name} failed"
 
     raise RuntimeError(f"All providers failed. Last error: {last_error}")
 

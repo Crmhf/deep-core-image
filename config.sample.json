@@ -2,8 +2,16 @@
     "default_provider": "qwen-image",
     "providers": {
         "gpt-image": {
-            "api_key": "YOUR_API_KEY",
-            "base_url": "YOUR_BASE_URL",
+            "endpoints": [
+                {
+                    "base_url": "YOUR_KMAGE_OR_PROXY_BASE_URL_1",
+                    "api_key": "YOUR_API_KEY_1"
+                },
+                {
+                    "base_url": "YOUR_KMAGE_OR_PROXY_BASE_URL_2",
+                    "api_key": "YOUR_API_KEY_2"
+                }
+            ],
             "model": "gpt-image-2",
             "endpoint_type": "openai_compatible"
         },
