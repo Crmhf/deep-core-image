@@ -28,12 +28,12 @@
 
 | 模型 | 能力档位 | 成本 | 速度 | 主用场景 | 当前状态 |
 |------|---------|------|------|---------|---------|
-| **gpt-image** | ⭐⭐⭐⭐⭐ S 级 | 高 | 慢 | 品牌主图、复杂海报、影视级美感 | 当前不可用（HTTP 400） |
-| **minimax-image** | ⭐⭐⭐⭐ A 级 | 中 | 中 | **日常主力、兜底模型** | 当前不可用（响应格式解析问题） |
+| **gpt-image** | ⭐⭐⭐⭐⭐ S 级 | 高 | 慢 | 品牌主图、复杂海报、影视级美感 | ⚠️ 取决于端点（KMAGE 格式已适配） |
+| **minimax-image** | ⭐⭐⭐⭐ A 级 | 中 | 中 | **日常主力、兜底模型** | ✅ 可用（响应解析已修复） |
 | **qwen-image** | ⭐⭐⭐ A-级 | 中 | 中 | 国风、中文海报、东方美学 | ✅ 可用 |
-| **qwen-image-flash** | ⭐⭐ B 级 | 低 | 快 | 图标、占位、迭代验证 | 当前不可用（需 b64_json 格式） |
+| **qwen-image-flash** | ⭐⭐ B 级 | 低 | 快 | 图标、占位、迭代验证 | ✅ 可用（默认 b64_json） |
 
-> **注意**：当前实测只有 `qwen-image` 可直接正常工作。`gpt-image`、`minimax-image`、`qwen-image-flash` 存在接口兼容性问题，需要后续修复。详细分析见 [模型可用性分析](#模型可用性分析)。
+> **注意**：代码已按 KMAGE API 格式完成适配，支持文生图和图生图。`minimax-image` 与 `qwen-image` / `qwen-image-flash` 实测可用；`gpt-image` 能否使用取决于 `config.json` 中配置的 `base_url` 是否真的是 KMAGE 端点。
 
 ## 快速开始
 
@@ -96,7 +96,13 @@ python scripts/generate_image.py --prompt "夕阳下的山脉" --output sunset.p
 python scripts/generate_image.py --prompt "美丽的风景" --ratio 16:9 --output landscape.png
 
 # 指定模型
-python scripts/generate_image.py --prompt "一只可爱的猫" --provider qwen-image --output cat.png
+python scripts/generate_image.py --prompt "一只可爱的猫" --provider minimax-image --output cat.png
+
+# 图生图
+python scripts/generate_image.py \
+  --prompt "将这只猫转换为水彩画风格" \
+  --input cat.png \
+  --output cat-watercolor.png
 ```
 
 ## 完整文档
@@ -115,50 +121,61 @@ python scripts/generate_image.py --prompt "一只可爱的猫" --provider qwen-i
 ### ✅ qwen-image（可用）
 
 - **测试方式**：直接指定 provider 为 `qwen-image`
-- **测试结果**：成功生成图片
+- **测试结果**：文生图、图生图均成功生成
 - **输出示例**：
   - `output/test-scenarios/01-web-hero-banner.png`（16:9，Web Hero Banner）
   - `output/test-scenarios/02-chinese-landscape.png`（3:4，国风山水画）
   - `output/test-scenarios/03-camera-icon.png`（1:1，相机图标）
 - **结论**：当前最稳定的模型，建议作为默认 provider
 
-### ❌ gpt-image（不可用）
+### ✅ minimax-image（可用）
 
-- **问题**：返回 `HTTP 400 - Invalid image generation request`
-- **可能原因**：
-  - 代理端点不支持 `gpt-image-2` 的特定参数
-  - `quality` / `style` 参数不被当前端点接受
-  - 模型名称或端点配置需要调整
-- **建议**：排查代理端点兼容性，或参考 OpenAI Image API 最新文档调整请求参数
+- **测试方式**：直接指定 provider 为 `minimax-image`
+- **测试结果**：文生图、图生图均成功生成
+- **修复内容**：
+  - 使用官方 `aspect_ratio` 参数替代 `width/height`
+  - 支持 `response_format: base64`
+  - 支持 `subject_reference` 图生图
+  - 正确解析 `data.image_urls` 和 `data.image_base64`
 
-### ❌ minimax-image（不可用）
+### ⚠️ gpt-image（取决于端点）
 
-- **问题**：API 返回成功（`status_msg: success` 且包含 `image_urls`），但脚本提示 `Unexpected MiniMax response format`
-- **可能原因**：
-  - MiniMax 实际返回的响应格式与 `generate_image.py` 中解析的格式不一致
-  - 脚本期望的字段名或响应结构已过时
-- **建议**：更新 `generate_image.py` 中 MiniMax 响应解析逻辑，适配 `data.image_urls` 字段
+- **适配内容**：
+  - 移除默认 `style` 参数传递
+  - 图生图字段从 `image` 改为 `reference_images`
+  - 默认 `response_format` 改为 `b64_json`
+  - 尺寸映射改为 KMAGE 支持的 `1536x864` / `864x1536`
+- **当前状态**：当前 `config.json` 配置的 `base_url: http://cf.douzimi.com:58728/v1` 对该密钥请求超时，无法确认是否为 KMAGE 端点
+- **建议**：将 `base_url` 替换为真实的 KMAGE 站点域名后再测试
 
-### ❌ qwen-image-flash（不可用）
+### ✅ qwen-image-flash（可用）
 
-- **问题**：返回 `HTTP 400 - Only 'b64_json' or 'file' response format is supported, got: ***.URL`
-- **可能原因**：`qwen-image-flash` 服务端不支持 `response_format: url`，只支持 `b64_json` 或 `file`
-- **建议**：
-  - 为 `qwen-image-flash` 单独设置 `response_format: b64_json`
-  - 或在代码中根据模型自动切换 response_format
+- **测试方式**：直接指定 provider 为 `qwen-image-flash`
+- **测试结果**：成功生成图片
+- **修复内容**：默认 `response_format` 改为 `b64_json`
 
 ## 当前推荐用法
 
-在三个模型修复之前，建议：
-
 ```bash
-# 将默认 provider 设为 qwen-image
-# 或每次生成时显式指定
+# 默认 provider 已设为 qwen-image
 python scripts/generate_image.py \
-  --provider qwen-image \
   --prompt "你的 Prompt" \
   --ratio 16:9 \
   --output output/项目名/图片.png
+
+# 指定 minimax-image（日常主力）
+python scripts/generate_image.py \
+  --provider minimax-image \
+  --prompt "你的 Prompt" \
+  --ratio 16:9 \
+  --output output/项目名/图片.png
+
+# 图生图
+python scripts/generate_image.py \
+  --provider qwen-image \
+  --input input/原图.png \
+  --prompt "转换为水彩画风格" \
+  --output output/项目名/水彩版.png
 ```
 
 ## 项目结构
@@ -211,11 +228,11 @@ deep-core-image/
 --input, -i       图生图的输入图片
 --size, -s        图片尺寸（如 1024x1024）
 --ratio, -r       宽高比（如 16:9、1:1）
---quality, -q     图片质量（standard、hd）
---style           图片风格（vivid、natural）
+--quality, -q     图片质量（auto、low、medium、high、standard、hd）
+--style           图片风格（vivid、natural，可选，部分端点支持）
 --n, --num        图片数量（1-10）
 --provider        强制指定提供商
---response-format 返回格式（url、b64_json）
+--response-format 返回格式（url、b64_json，默认 b64_json）
 --no-proxy        绕过系统代理
 --verbose, -v     详细输出
 ```
@@ -225,8 +242,8 @@ deep-core-image/
 | 比例 | 尺寸 | 适用场景 |
 |------|------|---------|
 | 1:1 | 1024x1024 | 方形，社交媒体头像 |
-| 16:9 | 1792x1024 | 宽屏，横幅，风景 |
-| 9:16 | 1024x1792 | 竖屏，手机壁纸，海报 |
+| 16:9 | 1536x864 | 宽屏，横幅，风景 |
+| 9:16 | 864x1536 | 竖屏，手机壁纸，海报 |
 | 4:3 | 1536x1152 | 标准比例 |
 | 3:4 | 1152x1536 | 竖屏标准 |
 | 3:2 | 1536x1024 | 摄影比例 |

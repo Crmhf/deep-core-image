@@ -1,5 +1,5 @@
 {
-    "default_provider": "gpt-image",
+    "default_provider": "qwen-image",
     "providers": {
         "gpt-image": {
             "api_key": "YOUR_API_KEY",
@@ -21,30 +21,30 @@
         },
         "minimax-image": {
             "api_key": "YOUR_API_KEY",
-            "base_url": "YOUR_BASE_URL",
+            "base_url": "https://api.minimaxi.com/v1",
             "model": "image-01",
             "endpoint_type": "minimax"
         }
     },
-    "fallback_order": ["gpt-image", "qwen-image", "qwen-image-flash", "minimax-image"],
+    "fallback_order": ["qwen-image", "minimax-image", "gpt-image", "qwen-image-flash"],
     "default_size": "1024x1024",
-    "default_quality": "hd",
-    "default_style": "vivid",
+    "default_quality": "high",
+    "default_response_format": "b64_json",
     "supported_sizes": [
         "1024x1024",
-        "1024x1792",
-        "1792x1024",
+        "1536x1024",
+        "1024x1536",
+        "1536x864",
+        "864x1536",
+        "1536x1152",
+        "1152x1536",
         "2048x2048",
-        "2048x1152",
-        "2048x1536",
-        "4096x4096",
-        "4096x2304",
-        "4096x3072"
+        "4096x4096"
     ],
     "supported_ratios": {
         "1:1": "1024x1024",
-        "16:9": "1792x1024",
-        "9:16": "1024x1792",
+        "16:9": "1536x864",
+        "9:16": "864x1536",
         "4:3": "1536x1152",
         "3:4": "1152x1536",
         "3:2": "1536x1024",

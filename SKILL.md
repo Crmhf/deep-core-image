@@ -84,11 +84,11 @@ description: 使用多个 AI 提供商生成高质量图片，支持自动降级
 
 ```json
 {
-    "default_provider": "minimax-image",
+    "default_provider": "qwen-image",
     "providers": {
         "gpt-image": {
             "api_key": "your-api-key",
-            "base_url": "http://your-proxy/v1",
+            "base_url": "https://your-kMAGE-domain/v1",
             "model": "gpt-image-2",
             "endpoint_type": "openai_compatible"
         },
@@ -101,7 +101,7 @@ description: 使用多个 AI 提供商生成高质量图片，支持自动降级
         "qwen-image-flash": {
             "api_key": "your-api-key",
             "base_url": "http://your-proxy/v1",
-            "model": "Qwen/Qwen-Image-Flash",
+            "model": "qwen-image-flash",
             "endpoint_type": "openai_compatible"
         },
         "minimax-image": {
@@ -111,10 +111,10 @@ description: 使用多个 AI 提供商生成高质量图片，支持自动降级
             "endpoint_type": "minimax"
         }
     },
-    "fallback_order": ["minimax-image", "qwen-image-flash", "gpt-image", "qwen-image"],
+    "fallback_order": ["qwen-image", "minimax-image", "gpt-image", "qwen-image-flash"],
     "default_size": "1024x1024",
-    "default_quality": "hd",
-    "default_style": "vivid",
+    "default_quality": "high",
+    "default_response_format": "b64_json",
     "timeout": 180,
     "max_retries": 3
 }
@@ -130,7 +130,7 @@ export DEEP_CORE_IMAGE_API_KEY="your-api-key"
 export DEEP_CORE_IMAGE_BASE_URL="http://your-proxy/v1"
 
 # 设置默认提供商
-export DEEP_CORE_IMAGE_DEFAULT_PROVIDER="minimax-image"
+export DEEP_CORE_IMAGE_DEFAULT_PROVIDER="qwen-image"
 ```
 
 ## 使用方法
@@ -199,13 +199,13 @@ python scripts/generate_image.py \
 | `--prompt`, `-p` | 图片描述 | 必填 | - |
 | `--output`, `-o` | 输出文件路径 | 必填 | - |
 | `--input`, `-i` | 用于图生图的输入图片 | null | - |
-| `--size`, `-s` | 图片尺寸 | 1024x1024 | 1024x1024, 2048x2048 等 |
+| `--size`, `-s` | 图片尺寸 | 1024x1024 | 1024x1024, 1536x864 等 |
 | `--ratio`, `-r` | 宽高比 | null | 1:1, 16:9, 9:16, 4:3, 3:4, 3:2, 2:3 |
-| `--quality`, `-q` | 图片质量 | hd | standard, hd |
-| `--style` | 图片风格 | vivid | vivid, natural |
+| `--quality`, `-q` | 图片质量 | high | auto, low, medium, high, standard, hd |
+| `--style` | 图片风格 | null | vivid, natural |
 | `--n`, `--num` | 图片数量 | 1 | 1-10 |
 | `--provider` | 强制指定提供商 | auto | gpt-image, qwen-image, minimax-image |
-| `--response-format` | 返回格式 | url | url, b64_json |
+| `--response-format` | 返回格式 | b64_json | url, b64_json |
 | `--no-proxy` | 绕过系统代理 | false | - |
 | `--verbose`, `-v` | 详细输出 | false | - |
 
@@ -214,8 +214,8 @@ python scripts/generate_image.py \
 | 比例 | 尺寸 | 适用场景 |
 |------|------|---------|
 | 1:1 | 1024x1024 | 方形，社交媒体头像 |
-| 16:9 | 1792x1024 | 宽屏，横幅，风景 |
-| 9:16 | 1024x1792 | 竖屏，手机壁纸，海报 |
+| 16:9 | 1536x864 | 宽屏，横幅，风景 |
+| 9:16 | 864x1536 | 竖屏，手机壁纸，海报 |
 | 4:3 | 1536x1152 | 标准比例 |
 | 3:4 | 1152x1536 | 竖屏标准 |
 | 3:2 | 1536x1024 | 摄影比例 |
@@ -225,10 +225,10 @@ python scripts/generate_image.py \
 
 系统自动按顺序尝试提供商：
 
-1. **minimax-image** → 如果失败 → **qwen-image-flash**
-2. **qwen-image-flash** → 如果失败 → **gpt-image**
-3. **gpt-image** → 如果失败 → **qwen-image**
-4. **qwen-image** → 如果失败 → 错误
+1. **qwen-image** → 如果失败 → **minimax-image**
+2. **minimax-image** → 如果失败 → **gpt-image**
+3. **gpt-image** → 如果失败 → **qwen-image-flash**
+4. **qwen-image-flash** → 如果失败 → 错误
 
 每个提供商最多重试 3 次，采用指数退避策略。
 
@@ -421,33 +421,62 @@ python scripts/generate_image.py \
 
 ## API 集成
 
-### OpenAI 兼容提供商
+### OpenAI 兼容提供商（KMAGE / Qwen）
 
-使用 `/v1/images/generations` 端点：
+使用 `/v1/images/generations` 端点，支持文生图和图生图：
 
+**文生图**：
 ```json
 {
   "model": "gpt-image-2",
   "prompt": "A beautiful landscape",
-  "size": "1792x1024",
-  "quality": "hd",
-  "style": "vivid",
+  "size": "1536x864",
+  "quality": "high",
   "n": 1,
-  "response_format": "url"
+  "response_format": "b64_json"
+}
+```
+
+**图生图**：
+```json
+{
+  "model": "gpt-image-2",
+  "prompt": "保留主体，将背景改为雪山",
+  "reference_images": ["data:image/png;base64,..."],
+  "size": "1024x1024",
+  "quality": "high",
+  "response_format": "b64_json"
 }
 ```
 
 ### MiniMax 提供商
 
-使用 `/v1/image_generation` 端点：
+使用 `/v1/image_generation` 端点，支持文生图和图生图：
 
+**文生图**：
 ```json
 {
   "model": "image-01",
   "prompt": "A beautiful landscape",
-  "width": 1792,
-  "height": 1024,
-  "num_images": 1
+  "aspect_ratio": "16:9",
+  "response_format": "base64",
+  "n": 1
+}
+```
+
+**图生图**：
+```json
+{
+  "model": "image-01",
+  "prompt": "保留人物主体，将背景改为雪山",
+  "subject_reference": [
+    {
+      "type": "character",
+      "image_file": "data:image/png;base64,..."
+    }
+  ],
+  "aspect_ratio": "1:1",
+  "response_format": "base64"
 }
 ```
 
@@ -476,7 +505,7 @@ python scripts/generate_image.py \
 - 图片内容策略适用（无 NSFW 内容）
 - 最大提示长度可能受 API 限制
 - 大图片可能需要更长时间生成
-- MiniMax 提供商不支持图生图
+- gpt-image 的可用性取决于配置的 `base_url` 是否支持该模型
 
 ## 故障排除
 
