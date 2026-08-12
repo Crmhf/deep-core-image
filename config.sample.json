@@ -1,0 +1,55 @@
+{
+    "default_provider": "gpt-image",
+    "providers": {
+        "gpt-image": {
+            "api_key": "YOUR_API_KEY",
+            "base_url": "YOUR_BASE_URL",
+            "model": "gpt-image-2",
+            "endpoint_type": "openai_compatible"
+        },
+        "qwen-image": {
+            "api_key": "YOUR_API_KEY",
+            "base_url": "YOUR_BASE_URL",
+            "model": "Qwen/Qwen-Image",
+            "endpoint_type": "openai_compatible"
+        },
+        "qwen-image-flash": {
+            "api_key": "YOUR_API_KEY",
+            "base_url": "YOUR_BASE_URL",
+            "model": "qwen-image-flash",
+            "endpoint_type": "openai_compatible"
+        },
+        "minimax-image": {
+            "api_key": "YOUR_API_KEY",
+            "base_url": "YOUR_BASE_URL",
+            "model": "image-01",
+            "endpoint_type": "minimax"
+        }
+    },
+    "fallback_order": ["gpt-image", "qwen-image", "qwen-image-flash", "minimax-image"],
+    "default_size": "1024x1024",
+    "default_quality": "hd",
+    "default_style": "vivid",
+    "supported_sizes": [
+        "1024x1024",
+        "1024x1792",
+        "1792x1024",
+        "2048x2048",
+        "2048x1152",
+        "2048x1536",
+        "4096x4096",
+        "4096x2304",
+        "4096x3072"
+    ],
+    "supported_ratios": {
+        "1:1": "1024x1024",
+        "16:9": "1792x1024",
+        "9:16": "1024x1792",
+        "4:3": "1536x1152",
+        "3:4": "1152x1536",
+        "3:2": "1536x1024",
+        "2:3": "1024x1536"
+    },
+    "timeout": 180,
+    "max_retries": 3
+}
