@@ -58,8 +58,16 @@ cp config.sample.json config.json
     "default_provider": "qwen-image",
     "providers": {
         "gpt-image": {
-            "api_key": "your-api-key",
-            "base_url": "http://your-proxy/v1",
+            "endpoints": [
+                {
+                    "base_url": "http://your-proxy-1/v1",
+                    "api_key": "your-api-key-1"
+                },
+                {
+                    "base_url": "http://your-proxy-2/v1",
+                    "api_key": "your-api-key-2"
+                }
+            ],
             "model": "gpt-image-2",
             "endpoint_type": "openai_compatible"
         },
@@ -85,6 +93,8 @@ cp config.sample.json config.json
     "fallback_order": ["qwen-image", "minimax-image", "gpt-image", "qwen-image-flash"]
 }
 ```
+
+> **gpt-image 多端点负载均衡**：`gpt-image` 支持配置多个 `endpoints`。脚本会按顺序尝试每个端点，单个端点失败时自动切换到下一个端点；如果所有端点都失败，再按 `fallback_order` 切换到其他 provider。适合为 gpt-image 配置多个代理或密钥，提高可用性。
 
 ### 3. 生成图片
 

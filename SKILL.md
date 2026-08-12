@@ -87,8 +87,16 @@ description: 使用多个 AI 提供商生成高质量图片，支持自动降级
     "default_provider": "qwen-image",
     "providers": {
         "gpt-image": {
-            "api_key": "your-api-key",
-            "base_url": "https://your-kMAGE-domain/v1",
+            "endpoints": [
+                {
+                    "base_url": "http://your-proxy-1/v1",
+                    "api_key": "your-api-key-1"
+                },
+                {
+                    "base_url": "http://your-proxy-2/v1",
+                    "api_key": "your-api-key-2"
+                }
+            ],
             "model": "gpt-image-2",
             "endpoint_type": "openai_compatible"
         },
@@ -119,6 +127,23 @@ description: 使用多个 AI 提供商生成高质量图片，支持自动降级
     "max_retries": 3
 }
 ```
+
+### 多端点负载均衡
+
+`gpt-image` 支持在 provider 内部配置多个 `endpoints`。脚本会按数组顺序依次尝试每个端点，单个端点失败时自动切换到下一个端点；如果该 provider 的所有端点都失败，才会按 `fallback_order` 降级到其他 provider。
+
+```json
+"gpt-image": {
+    "endpoints": [
+        {"base_url": "http://proxy-a/v1", "api_key": "key-a"},
+        {"base_url": "http://proxy-b/v1", "api_key": "key-b"}
+    ],
+    "model": "gpt-image-2",
+    "endpoint_type": "openai_compatible"
+}
+```
+
+这一机制特别适合 gpt-image-2 这种对端点稳定性要求高的模型，可以通过配置多个代理或密钥来提高可用性。
 
 ### 环境变量
 

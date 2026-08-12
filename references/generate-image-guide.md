@@ -223,14 +223,15 @@ ls scripts/generate_image.py
 
 **解决**：检查 `config.json` 中该 provider 的 `api_key` 和 `base_url`。
 
-### gpt-image 超时
+### gpt-image 超时或失败
 
-**原因**：KMAGE 服务端当前对 gpt-image-2 响应极慢。
+**原因**：gpt-image-2 对端点稳定性要求高，单个代理/端点可能出现超时或不可用。
 
 **解决**：
-1. 使用 `--no-proxy` 绕过代理
-2. 增加 `config.json` 中的 `timeout`
-3. 暂时改用 `qwen-image` 或 `minimax-image`
+1. 在 `config.json` 中为 `gpt-image` 配置多个 `endpoints`，脚本会自动按顺序做负载均衡和降级
+2. 使用 `--no-proxy` 绕过系统代理
+3. 增加 `config.json` 中的 `timeout`
+4. 如果所有 gpt-image 端点都失败，脚本会自动按 `fallback_order` 降级到 `qwen-image` 或 `minimax-image`
 
 ### 401 Invalid API key
 
