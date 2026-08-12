@@ -145,7 +145,7 @@ python scripts/generate_image.py \
   - 图生图字段从 `image` 改为 `reference_images`
   - 默认 `response_format` 改为 `b64_json`
   - 尺寸映射改为 KMAGE 支持的 `1536x864` / `864x1536`
-- **当前状态**：当前 `config.json` 配置的 `base_url: http://cf.douzimi.com:58728/v1` 对该密钥请求超时，无法确认是否为 KMAGE 端点
+- **当前状态**：当前 `config.json` 配置的 `base_url` 不是 KMAGE 端点，对该模型请求超时，需替换为真实 KMAGE 站点域名
 - **建议**：将 `base_url` 替换为真实的 KMAGE 站点域名后再测试
 
 ### ✅ qwen-image-flash（可用）
