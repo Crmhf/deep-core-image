@@ -535,4 +535,5 @@ python scripts/generate_image.py \
 - [风格指南](references/style-guide.md) - 丰富的风格关键词库
 - [Prompt 编写指南](references/prompt-writing-guide.md) - 系统的 Prompt 编写方法
 - [最佳实践](references/best-practices.md) - 汇总最佳实践
+- [图片生成脚本构建与调用指南](references/generate-image-guide.md) - 如何构建 generate_image.py 并直接指定 provider
 - [跨平台 CLI 图像处理工具指南](references/cli-image-processing-guide.md) - ImageMagick 等后处理工具

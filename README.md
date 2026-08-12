@@ -113,6 +113,7 @@ python scripts/generate_image.py \
 - [references/style-guide.md](references/style-guide.md) - 风格关键词库
 - [references/prompt-writing-guide.md](references/prompt-writing-guide.md) - Prompt 编写指南
 - [references/best-practices.md](references/best-practices.md) - 最佳实践汇总
+- [references/generate-image-guide.md](references/generate-image-guide.md) - `generate_image.py` 脚本构建与指定 provider 调用指南
 - [references/cli-image-processing-guide.md](references/cli-image-processing-guide.md) - 跨平台 CLI 图像处理工具指南
 
 ## 模型可用性分析
