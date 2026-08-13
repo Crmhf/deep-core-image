@@ -8,6 +8,8 @@ Supported Providers (in fallback order):
 1. GPT-Image-2 (OpenAI-compatible proxy)
 2. Qwen-Image (OpenAI-compatible proxy)
 3. MiniMax Image-01 (MiniMax API)
+4. Kwai-Kolors (OpenAI-compatible proxy)
+5. Qwen-Image-Flash (OpenAI-compatible proxy)
 
 Supported Features:
 - Text to Image (文生图)
@@ -85,7 +87,7 @@ def get_config():
     defaults = {
         "default_provider": "gpt-image",
         "providers": {},
-        "fallback_order": ["gpt-image", "qwen-image", "qwen-image-flash", "minimax-image"],
+        "fallback_order": ["gpt-image", "qwen-image", "minimax-image", "kwai-image", "qwen-image-flash"],
         "default_size": "1024x1024",
         "default_quality": "high",
         "default_response_format": "b64_json",

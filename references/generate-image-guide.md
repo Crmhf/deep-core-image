@@ -2,7 +2,7 @@
 
 ## 概述
 
-本文档说明 `scripts/generate_image.py` 脚本的构建方式、初始化流程，以及如何在生成图片时**直接指定使用某个 provider**。该脚本是 deep-core-image 技能的核心执行入口，负责统一调用 `gpt-image`、`minimax-image`、`qwen-image`、`qwen-image-flash` 四个模型，并自动处理降级。
+本文档说明 `scripts/generate_image.py` 脚本的构建方式、初始化流程，以及如何在生成图片时**直接指定使用某个 provider**。该脚本是 deep-core-image 技能的核心执行入口，负责统一调用 `gpt-image`、`minimax-image`、`qwen-image`、`qwen-image-flash`、`kwai-image` 五个模型，并自动处理降级。
 
 ## 初始化时脚本状态
 
@@ -89,12 +89,12 @@ python scripts/generate_image.py \
   --ratio 1:1 \
   --output output/cat-icon.png
 
-# 使用 gpt-image（KMAGE 端点）
+# 使用 kwai-image（快速出图 / 低要求场景）
 python scripts/generate_image.py \
-  --provider gpt-image \
-  --prompt "cinematic portrait of a cat, 8k" \
-  --ratio 3:4 \
-  --output output/cat-cinematic.png
+  --provider kwai-image \
+  --prompt "simple cat icon, flat design" \
+  --ratio 1:1 \
+  --output output/cat-icon-kwai.png
 ```
 
 ### 不指定 Provider（自动降级）
@@ -109,13 +109,13 @@ python scripts/generate_image.py \
 此时会按 `config.json` 中的 `fallback_order` 自动尝试：
 
 ```
-gpt-image → qwen-image → minimax-image → qwen-image-flash
+gpt-image → qwen-image → minimax-image → kwai-image → qwen-image-flash
 ```
 
 ### 环境变量方式
 
 ```bash
-export DEEP_CORE_IMAGE_DEFAULT_PROVIDER=minimax-image
+export DEEP_CORE_IMAGE_DEFAULT_PROVIDER=kwai-image
 python scripts/generate_image.py --prompt "一只可爱的猫" --output output/cat.png
 ```
 
@@ -125,7 +125,7 @@ python scripts/generate_image.py --prompt "一只可爱的猫" --output output/c
 
 ```json
 {
-  "default_provider": "minimax-image"
+  "default_provider": "gpt-image"
 }
 ```
 
@@ -135,8 +135,9 @@ python scripts/generate_image.py --prompt "一只可爱的猫" --output output/c
 |------|--------------|---------|
 | 日常配图 / 兜底 | `minimax-image` | `--provider minimax-image` |
 | 国风 / 东方美学 | `qwen-image` | `--provider qwen-image` |
-| 快速验证 / 图标 | `qwen-image-flash` | `--provider qwen-image-flash` |
+| 快速验证 / 图标 | `qwen-image-flash` / `kwai-image` | `--provider qwen-image-flash` / `--provider kwai-image` |
 | 品牌 / 复杂 / 影视级 | `gpt-image` | `--provider gpt-image` |
+| 快速出图 / 低要求 | `kwai-image` | `--provider kwai-image` |
 
 ## 完整命令行参数
 
@@ -157,7 +158,7 @@ python scripts/generate_image.py --prompt "一只可爱的猫" --output output/c
 
 ## 图生图调用
 
-### OpenAI 兼容 Provider（gpt-image / qwen-image / qwen-image-flash）
+### OpenAI 兼容 Provider（gpt-image / qwen-image / qwen-image-flash / kwai-image）
 
 ```bash
 python scripts/generate_image.py \
@@ -241,10 +242,10 @@ ls scripts/generate_image.py
 
 ## 最佳实践
 
-1. **明确指定 provider**：不要依赖自动降级，按需选择模型
-2. **验证阶段用 flash**：`qwen-image-flash` 快速验证 prompt 方向
-3. **正式输出用 minimax/qwen**：平衡质量与成本
-4. **关键图用 gpt-image**：确认 KMAGE 端点可用后再使用
+1. **验证阶段用 flash / kwai-image**：`qwen-image-flash` 或 `kwai-image` 快速验证 prompt 方向
+2. **正式输出用 minimax/qwen**：平衡质量与成本
+3. **关键图用 gpt-image**：确认 KMAGE 端点可用后再使用
+4. **快速出图用 kwai-image**：对质量要求不高的场景优先使用，响应快、成本低
 5. **后处理用 ImageMagick**：生成后用 CLI 工具裁切、压缩、加水印
 
 ## 参考

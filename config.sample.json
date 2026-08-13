@@ -32,9 +32,15 @@
             "base_url": "https://api.minimaxi.com/v1",
             "model": "image-01",
             "endpoint_type": "minimax"
+        },
+        "kwai-image": {
+            "api_key": "YOUR_API_KEY",
+            "base_url": "YOUR_BASE_URL",
+            "model": "Kwai-Kolors/Kolors",
+            "endpoint_type": "openai_compatible"
         }
     },
-    "fallback_order": ["gpt-image", "qwen-image", "minimax-image", "qwen-image-flash"],
+    "fallback_order": ["gpt-image", "qwen-image", "minimax-image", "kwai-image", "qwen-image-flash"],
     "default_size": "1024x1024",
     "default_quality": "high",
     "default_response_format": "b64_json",

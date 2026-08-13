@@ -1,6 +1,6 @@
 ---
 name: deep-core-image
-description: 使用多个 AI 提供商生成高质量图片，支持自动降级。适用于 Web 应用、网站、小程序、日常配图、小图标、验证草图等场景。支持 gpt-image、minimax-image、qwen-image、qwen-image-flash 四个模型，按场景复杂度选型，minimax 兜底。
+description: 使用多个 AI 提供商生成高质量图片，支持自动降级。适用于 Web 应用、网站、小程序、日常配图、小图标、验证草图等场景。支持 gpt-image、minimax-image、qwen-image、qwen-image-flash、kwai-image 五个模型，按场景复杂度选型，minimax / kwai-image 兜底。
 ---
 
 # Deep Core Image Generation Skill
@@ -11,7 +11,7 @@ description: 使用多个 AI 提供商生成高质量图片，支持自动降级
 
 本技能支持使用多个 AI 提供商生成图片，当主提供商失败时，系统自动尝试下一个提供商，确保图片生成的可靠性。
 
-**核心原则：按场景复杂度选模型，minimax 兜底。**
+**核心原则：按场景复杂度选模型，minimax / kwai-image 兜底。**
 
 ## 支持的模型
 
@@ -21,6 +21,7 @@ description: 使用多个 AI 提供商生成高质量图片，支持自动降级
 | **minimax-image** | ⭐⭐⭐⭐ A 级 | 通用场景、中文理解、性价比、风格覆盖广 | 中 | 中 | **日常主力、兜底模型** |
 | **qwen-image** | ⭐⭐⭐ A-级 | 东方美学、国风水墨、中文古风、文字渲染 | 中 | 中 | 国风、中文海报、传统题材 |
 | **qwen-image-flash** | ⭐⭐ B 级 | 简单图、图标、占位、验证草图 | 低 | 快 | 图标、占位、迭代验证 |
+| **kwai-image** | ⭐⭐ B 级 | 快速出图、低要求场景、快速验证 | 低 | **快** | 快速配图、占位图、低要求生成 |
 
 ### 选型速查
 
@@ -29,6 +30,7 @@ description: 使用多个 AI 提供商生成高质量图片，支持自动降级
 日常/通用/兜底 → minimax-image
 国风/古风/中文书法 → qwen-image
 图标/占位/快速验证 → qwen-image-flash
+快速出图/低要求 → kwai-image
 ```
 
 ## 适用场景
@@ -45,24 +47,27 @@ description: 使用多个 AI 提供商生成高质量图片，支持自动降级
 
 **Web 应用 / 网站**
 - 首页 Hero 大图 → gpt-image
-- Banner / 活动图 → minimax-image
-- 博客配图 → minimax-image
-- favicon / 图标 → qwen-image-flash
+- Banner / 活动图 → minimax-image / kwai-image
+- 博客配图 → minimax-image / kwai-image
+- favicon / 图标 → qwen-image-flash / kwai-image
 
 **小程序**
 - 启动页 / 首屏 → gpt-image
-- 分享卡片 → minimax-image
-- 分类图标 → qwen-image-flash
+- 分享卡片 → minimax-image / kwai-image
+- 分类图标 → qwen-image-flash / kwai-image
 
 **日常做图**
 - 公众号头图 → gpt-image
-- PPT 配图 → minimax-image
-- 表情包 → minimax-image
+- PPT 配图 → minimax-image / kwai-image
+- 表情包 → minimax-image / kwai-image
 
 **小图标 / 验证**
-- App Icon → minimax-image
-- 工具栏图标 → qwen-image-flash
-- 验证草图 → qwen-image-flash
+- App Icon → minimax-image / kwai-image
+- 工具栏图标 → qwen-image-flash / kwai-image
+- 验证草图 → qwen-image-flash / kwai-image
+
+**快速出图**
+- 临时配图 / 占位图 → kwai-image
 
 详细的场景选型请参考 [场景模型选型指南](references/scene-model-selection-guide.md)。
 
@@ -117,9 +122,15 @@ description: 使用多个 AI 提供商生成高质量图片，支持自动降级
             "base_url": "https://api.minimaxi.com/v1",
             "model": "image-01",
             "endpoint_type": "minimax"
+        },
+        "kwai-image": {
+            "api_key": "your-api-key",
+            "base_url": "http://your-proxy/v1",
+            "model": "Kwai-Kolors/Kolors",
+            "endpoint_type": "openai_compatible"
         }
     },
-    "fallback_order": ["gpt-image", "qwen-image", "minimax-image", "qwen-image-flash"],
+    "fallback_order": ["gpt-image", "qwen-image", "minimax-image", "kwai-image", "qwen-image-flash"],
     "default_size": "1024x1024",
     "default_quality": "high",
     "default_response_format": "b64_json",
@@ -229,7 +240,7 @@ python scripts/generate_image.py \
 | `--quality`, `-q` | 图片质量 | high | auto, low, medium, high, standard, hd |
 | `--style` | 图片风格 | null | vivid, natural |
 | `--n`, `--num` | 图片数量 | 1 | 1-10 |
-| `--provider` | 强制指定提供商 | auto | gpt-image, qwen-image, minimax-image |
+| `--provider` | 强制指定提供商 | auto | gpt-image, qwen-image, minimax-image, kwai-image, qwen-image-flash |
 | `--response-format` | 返回格式 | b64_json | url, b64_json |
 | `--no-proxy` | 绕过系统代理 | false | - |
 | `--verbose`, `-v` | 详细输出 | false | - |
@@ -373,16 +384,17 @@ pixel art, 8-bit, 16-bit retro game
 
 ### 核心原则
 
-1. **按场景选模型**：复杂才用 gpt-image，日常全靠 minimax 兜底
-2. **二八原则**：80% minimax-image，15% gpt-image，4% qwen-image，1% qwen-image-flash
-3. **先验证后精修**：用 qwen-image-flash 快速验证，确认后再用目标模型
+1. **按场景选模型**：复杂才用 gpt-image，日常用 minimax-image，快速出图用 kwai-image
+2. **二八原则**：60% minimax-image / kwai-image，20% gpt-image，15% qwen-image，5% qwen-image-flash / kwai-image 验证
+3. **先验证后精修**：用 qwen-image-flash 或 kwai-image 快速验证，确认后再用目标模型
 4. **Prompt 要写好**：具体 + 结构 + 统一 + 迭代
 
 ### 成本控制
 
-- gpt-image 用在最关键处（5%）
-- minimax-image 承担 80% 日常
-- qwen-image-flash 用于验证和图标
+- gpt-image 用在最关键处（10%）
+- minimax-image 承担 50% 日常
+- kwai-image 承担 30% 快速出图与低要求场景
+- qwen-image-flash 用于验证和图标（10%）
 - 设置每用户/每日上限
 
 ### 质量保证

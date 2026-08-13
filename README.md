@@ -4,7 +4,7 @@
 
 ## 项目定位
 
-**Deep Core Image** 是一个面向 Web 应用、网站、小程序、日常配图、小图标、验证草图等场景的 AI 图像生成技能。它整合多个主流图像生成模型（gpt-image、minimax-image、qwen-image、qwen-image-flash），提供统一的调用入口、自动降级机制、场景化选型指导和 Prompt 最佳实践。
+**Deep Core Image** 是一个面向 Web 应用、网站、小程序、日常配图、小图标、验证草图等场景的 AI 图像生成技能。它整合多个主流图像生成模型（gpt-image、minimax-image、qwen-image、qwen-image-flash、kwai-image），提供统一的调用入口、自动降级机制、场景化选型指导和 Prompt 最佳实践。
 
 **核心目标**：
 
@@ -18,10 +18,11 @@
 | 场景类型 | 示例 | 推荐模型 |
 |---------|------|---------|
 | Web 应用 / 网站 | Hero 图、Banner、博客配图、404 插画 | minimax-image / gpt-image |
-| 小程序 | 启动页、分享卡片、分类图标、弹窗图 | minimax-image / qwen-image-flash |
-| 日常做图 | 公众号头图、PPT 配图、朋友圈海报 | minimax-image / gpt-image |
-| 小图标 | App Icon、工具栏图标、功能图标 | qwen-image-flash / minimax-image |
-| 验证草图 | 概念验证、A/B 测试、mood board | qwen-image-flash |
+| 小程序 | 启动页、分享卡片、分类图标、弹窗图 | minimax-image / qwen-image-flash / kwai-image |
+| 日常做图 | 公众号头图、PPT 配图、朋友圈海报 | minimax-image / gpt-image / kwai-image |
+| 小图标 | App Icon、工具栏图标、功能图标 | qwen-image-flash / minimax-image / kwai-image |
+| 验证草图 | 概念验证、A/B 测试、mood board | qwen-image-flash / kwai-image |
+| 快速出图 | 要求不高、需要快速响应 | **kwai-image** |
 | 国风 / 东方美学 | 国风海报、中文书法、传统题材 | qwen-image |
 
 ## 模型矩阵
@@ -32,8 +33,9 @@
 | **minimax-image** | ⭐⭐⭐⭐ A 级 | 中 | 中 | **日常主力、兜底模型** | ✅ 可用（响应解析已修复） |
 | **qwen-image** | ⭐⭐⭐ A-级 | 中 | 中 | 国风、中文海报、东方美学 | ✅ 可用 |
 | **qwen-image-flash** | ⭐⭐ B 级 | 低 | 快 | 图标、占位、迭代验证 | ✅ 可用（默认 b64_json） |
+| **kwai-image** | ⭐⭐ B 级 | 低 | **快** | 快速出图、低要求场景、兜底验证 | ✅ 可用（返回 url） |
 
-> **注意**：代码已按 KMAGE API 格式完成适配，支持文生图和图生图。`minimax-image` 与 `qwen-image` / `qwen-image-flash` 实测可用；`gpt-image` 能否使用取决于 `config.json` 中配置的 `base_url` 是否真的是 KMAGE 端点。
+> **注意**：代码已按 KMAGE API 格式完成适配，支持文生图和图生图。`minimax-image`、`qwen-image`、`qwen-image-flash`、`kwai-image` 实测可用；`gpt-image` 能否使用取决于 `config.json` 中配置的 `base_url` 是否真的是 KMAGE 端点。
 
 ## 快速开始
 
@@ -88,9 +90,15 @@ cp config.sample.json config.json
             "base_url": "https://api.minimaxi.com/v1",
             "model": "image-01",
             "endpoint_type": "minimax"
+        },
+        "kwai-image": {
+            "api_key": "your-api-key",
+            "base_url": "http://your-proxy/v1",
+            "model": "Kwai-Kolors/Kolors",
+            "endpoint_type": "openai_compatible"
         }
     },
-    "fallback_order": ["gpt-image", "qwen-image", "minimax-image", "qwen-image-flash"]
+    "fallback_order": ["gpt-image", "qwen-image", "minimax-image", "kwai-image", "qwen-image-flash"]
 }
 ```
 
@@ -138,7 +146,7 @@ python scripts/generate_image.py \
   - `output/test-scenarios/01-web-hero-banner.png`（16:9，Web Hero Banner）
   - `output/test-scenarios/02-chinese-landscape.png`（3:4，国风山水画）
   - `output/test-scenarios/03-camera-icon.png`（1:1，相机图标）
-- **结论**：当前最稳定的模型，建议作为默认 provider
+- **结论**：当前最稳定的模型之一，适合国风与中文场景
 
 ### ✅ minimax-image（可用）
 
@@ -157,14 +165,25 @@ python scripts/generate_image.py \
   - 图生图字段从 `image` 改为 `reference_images`
   - 默认 `response_format` 改为 `b64_json`
   - 尺寸映射改为 KMAGE 支持的 `1536x864` / `864x1536`
-- **当前状态**：当前 `config.json` 配置的 `base_url` 不是 KMAGE 端点，对该模型请求超时，需替换为真实 KMAGE 站点域名
-- **建议**：将 `base_url` 替换为真实的 KMAGE 站点域名后再测试
+  - 支持单 provider 内多 `endpoints` 负载均衡
+- **当前状态**：已在 `config.json` 配置多个 KMAGE 端点，单端点失败时自动切换；若所有端点均失败则降级到其他 provider
+- **建议**：为 `gpt-image` 配置多个可用端点以提高稳定性
 
 ### ✅ qwen-image-flash（可用）
 
 - **测试方式**：直接指定 provider 为 `qwen-image-flash`
 - **测试结果**：成功生成图片
 - **修复内容**：默认 `response_format` 改为 `b64_json`
+
+### ✅ kwai-image（可用，快速出图）
+
+- **测试方式**：直接指定 provider 为 `kwai-image`，模型 `Kwai-Kolors/Kolors`
+- **测试结果**：文生图成功生成，响应约 4-5 秒
+- **特点**：
+  - 速度快，成本低
+  - 适合对质量要求不高的快速出图场景
+  - 当前返回格式为 `url`，脚本已支持自动下载
+- **建议**：作为快速验证、占位图或兜底方案使用
 
 ## 当前推荐用法
 
@@ -221,15 +240,16 @@ deep-core-image/
 日常/通用/兜底 → minimax-image
 国风/古风/中文书法 → qwen-image
 图标/占位/快速验证 → qwen-image-flash
+快速出图/低要求 → kwai-image
 ```
 
 **二八原则**：
 
 ```
-80% 场景用 minimax-image
+70% 场景用 minimax-image / kwai-image
 15% 场景用 gpt-image 提质
-4% 场景用 qwen-image 走东方
-1% 场景用 qwen-image-flash 验证
+10% 场景用 qwen-image 走东方
+5% 场景用 qwen-image-flash / kwai-image 验证与快速出图
 ```
 
 ## 命令行参数
